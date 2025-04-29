@@ -78,17 +78,23 @@ def create_vectorized_features(data_dir):
     Create feature vectors from raw features and write them to disk
     """
     extractor = PEFeatureExtractor()
-    raw_feature_paths = [os.path.join(data_dir, f"train_features_{i}.jsonl") for i in range(7)]
+    raw_feature_paths = [os.path.join(data_dir, f"train_features_{i}.jsonl") for i in range(6)]
     filtered_path = os.path.join(data_dir, "filtered_train.jsonl")
 
     write_filtered_features(raw_feature_paths, filtered_path)
 
-    nrows = sum(1 for _ in open(filtered_path)) 
+
     print("Vectorizing training set")
-    X_path = os.path.join(data_dir, "X.dat")
-    y_path = os.path.join(data_dir, "y.dat")
-    #raw_feature_paths = [os.path.join(data_dir, "output.jsonl".format(i)) for i in range(1)]
-    #nrows = count_filtered_lines(raw_feature_paths)
+    X_path = os.path.join(data_dir, "X_train.dat")
+    y_path = os.path.join(data_dir, "y_train.dat")
+    nrows = sum(1 for _ in open(filtered_path)) 
+    vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows)
+
+    print("Vectorizing testing set")
+    X_path = os.path.join(data_dir, "X_test.dat")
+    y_path = os.path.join(data_dir, "y_test.dat")
+    raw_feature_paths = [os.path.join(data_dir, "test_features.jsonl")]
+    nrows = sum([1 for fp in raw_feature_paths for line in open(fp)])
     vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows)
 
 
@@ -98,13 +104,21 @@ def read_vectorized_features(data_dir, subset=None):
     """
     extractor = PEFeatureExtractor()
     ndim = extractor.dim
-    X = None
-    y = None
+    X_train = None
+    y_train = None
+    X_test = None
+    y_test = None
 
-    X_path = os.path.join(data_dir, "X.dat")
-    y_path = os.path.join(data_dir, "y.dat")
-    y = np.memmap(y_path, dtype=np.float32, mode="r")
-    N = y.shape[0]
-    X = np.memmap(X_path, dtype=np.float32, mode="r", shape=(N, ndim))
+    X_train_path = os.path.join(data_dir, "X_train.dat")
+    y_train_path = os.path.join(data_dir, "y_train.dat")
+    y_train = np.memmap(y_train_path, dtype=np.float32, mode="r")
+    N = y_train.shape[0]
+    X_train = np.memmap(X_train_path, dtype=np.float32, mode="r", shape=(N, ndim))
 
-    return X, y
+    X_test_path = os.path.join(data_dir, "X_test.dat")
+    y_test_path = os.path.join(data_dir, "y_test.dat")
+    y_test = np.memmap(y_test_path, dtype=np.float32, mode="r")
+    N = y_test.shape[0]
+    X_test = np.memmap(X_test_path, dtype=np.float32, mode="r", shape=(N, ndim))
+
+    return X_train, y_train, X_test, y_test
