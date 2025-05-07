@@ -73,11 +73,11 @@ def vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows):
     for args in tqdm.tqdm(argument_iterator, total=nrows):
         vectorize_unpack(args)
 
-def create_vectorized_features(data_dir):
+def create_vectorized_features(data_dir, vers=2017):
     """
     Create feature vectors from raw features and write them to disk
     """
-    extractor = PEFeatureExtractor()
+    extractor = PEFeatureExtractor(version=vers)
     raw_feature_paths = [os.path.join(data_dir, f"train_features_{i}.jsonl") for i in range(6)]
     filtered_path = os.path.join(data_dir, "filtered_train.jsonl")
 
@@ -98,11 +98,11 @@ def create_vectorized_features(data_dir):
     vectorize_subset(X_path, y_path, raw_feature_paths, extractor, nrows)
 
 
-def read_vectorized_features(data_dir, subset=None):
+def read_vectorized_features(data_dir, subset=None, vers=2017):
     """
     Read vectorized features into memory mapped numpy arrays
     """
-    extractor = PEFeatureExtractor()
+    extractor = PEFeatureExtractor(version=vers)
     ndim = extractor.dim
     X_train = None
     y_train = None
@@ -122,3 +122,4 @@ def read_vectorized_features(data_dir, subset=None):
     X_test = np.memmap(X_test_path, dtype=np.float32, mode="r", shape=(N, ndim))
 
     return X_train, y_train, X_test, y_test
+
