@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 
+from feature_extractors.data_directories import DataDirectories
 import lief
 import numpy as np
 import pandas as pd
@@ -19,7 +20,7 @@ from feature_extractors.strings import StringExtractor
 class PEFeatureExtractor(object):
     ''' Extract useful features from a PE file, and return as a vector of fixed size. '''
 
-    def __init__(self, features_file=''):
+    def __init__(self, features_file='', version=2017):
         self.features = []
         features = {
                     'histogram': ByteHistogram(),
@@ -29,7 +30,7 @@ class PEFeatureExtractor(object):
                     'header': HeaderFileInfo(),
                     'section': SectionInfo(),
                     'imports': ImportsInfo(),
-                    'exports': ExportsInfo()
+                    'exports': ExportsInfo(),
             }
 
         if os.path.exists(features_file):
@@ -45,6 +46,9 @@ class PEFeatureExtractor(object):
         else:
             self.features = list(features.values())
 
+        if version == 2018:
+            self.features.append(DataDirectories())
+           
         self.dim = sum([fe.dim for fe in self.features])
 
     def raw_features(self, bytez):
@@ -55,7 +59,7 @@ class PEFeatureExtractor(object):
         except lief_errors as e:
             print("lief error: ", str(e))
             lief_binary = None
-        except Exception:  # everything else (KeyboardInterrupt, SystemExit, ValueError):
+        except Exception:  
             raise
 
         features = {"sha256": hashlib.sha256(bytez).hexdigest()}
