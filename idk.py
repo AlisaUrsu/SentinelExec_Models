@@ -1,4 +1,5 @@
 import os
+from indexed_scaled_dataset import IndexedScaledDataset
 from scaled_dataset import ScaledDataset
 import torch.nn as nn
 import torch.optim as optim
@@ -9,35 +10,45 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, roc_auc_score
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.preprocessing import StandardScaler
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
+
+def stratified_indices(y, val_ratio=0.15, seed=19):
+    np.random.seed(seed)
+    y = np.asarray(y)
+
+    class0_idx = np.where(y == 0)[0]
+    class1_idx = np.where(y == 1)[0]
+
+    np.random.shuffle(class0_idx)
+    np.random.shuffle(class1_idx)
+
+    val_size0 = int(len(class0_idx) * val_ratio)
+    val_size1 = int(len(class1_idx) * val_ratio)
+
+    val_idx = np.concatenate([class0_idx[:val_size0], class1_idx[:val_size1]])
+    train_idx = np.concatenate([class0_idx[val_size0:], class1_idx[val_size1:]])
+
+    return train_idx, val_idx
+
 
 def prepare_dataloaders(X_train, y_train, X_test, y_test, batch_size=8192, val_split=0.15):
-    # Split training into train and val
-    val_len = int(val_split * len(X_train))
-    train_len = len(X_train) - val_len
-
-    X_val = X_train[-val_len:]
-    y_val = y_train[-val_len:]
-    X_train = X_train[:train_len]
-    y_train = y_train[:train_len]
+    train_idx, val_idx = stratified_indices(y_train, val_ratio=val_split)
 
     # Fit scaler incrementally
     scaler = StandardScaler()
-    batch_size_scaler = 10000
-    for i in range(0, X_train.shape[0], batch_size_scaler):
-        scaler.partial_fit(X_train[i:i+batch_size_scaler])
+    for i in range(0, len(train_idx), 10000):
+        batch_indices = train_idx[i:i+10000]
+        scaler.partial_fit(X_train[batch_indices])
 
-    # Wrap datasets
-    train_dataset = ScaledDataset(X_train, y_train, scaler)
-    val_dataset = ScaledDataset(X_val, y_val, scaler)
+    train_dataset = IndexedScaledDataset(X_train, y_train, train_idx, scaler)
+    val_dataset = IndexedScaledDataset(X_train, y_train, val_idx, scaler)
     test_dataset = ScaledDataset(X_test, y_test, scaler)
 
-    # Create loaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, scaler
 
 def train_model(model, train_loader, val_loader, device, num_epochs=50, lr=0.001, save_path="firstNN.pth"):
     model = model.to(device)
@@ -153,13 +164,8 @@ def plot_training_metrics(train_losses, val_losses, train_accuracies, val_accura
     plt.show()
 
 def get_fpr(y_true, y_pred):
-    y_true = np.asarray(y_true).flatten()
-    y_pred = np.asarray(y_pred).flatten()
-    
-    mask_benign = y_true == 0
-    nbenign = mask_benign.sum()
-    nfalse = (y_pred[mask_benign] == 1).sum()
-    
+    nbenign = (y_true == 0).sum()
+    nfalse = (y_pred[y_true == 0] == 1).sum()
     return nfalse / float(nbenign)
 
 
@@ -172,14 +178,32 @@ def find_threshold(y_true, y_probs, fpr_target=0.01, step=0.0001):
     return threshold, fpr
 
 def evaluate_at_fpr_thresholds(y_true, y_probs, fpr_targets=[0.01, 0.001]):
+    y_true = np.asarray(y_true).flatten()
+    y_probs = np.asarray(y_probs).flatten()
     for fpr_target in fpr_targets:
         threshold, actual_fpr = find_threshold(y_true, y_probs, fpr_target)
         fnr = ((y_probs[y_true == 1] < threshold).sum()) / float((y_true == 1).sum())
+        tpr = 1 - fnr
         print(f"\nPerformance at {fpr_target*100:.1f}% FPR:")
         print(f"Threshold: {threshold:.4f}")
         print(f"False Positive Rate: {actual_fpr*100:.4f}%")
         print(f"False Negative Rate: {fnr*100:.4f}%")
-        print(f"Detection Rate (TPR): {(1 - fnr)*100:.4f}%")
+        print(f"Detection Rate (TPR): {tpr*100:.4f}%")
+
+    plt.figure(figsize=(8, 8))
+    fpr_plot, tpr_plot, _ = roc_curve(y_true, y_probs)
+    plt.plot(fpr_plot, tpr_plot, lw=4, color='k')
+    plt.gca().set_xscale("log")
+    plt.yticks(np.arange(22) / 20.0)
+    plt.xlim([4e-5, 1.0])
+    plt.ylim([0.65, 1.01])
+    plt.gca().grid(True)
+    plt.vlines(actual_fpr, 0, tpr, color="r", lw=2)
+    plt.hlines(tpr, 0, actual_fpr, color="r", lw=2)
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC Curve at {fpr_target*100:.2f}% FPR")
+    plt.show()
 
 
 def evaluate_model_on_test(model, test_loader, device):
