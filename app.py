@@ -7,7 +7,7 @@ import os
 from waitress import serve
 
 # Import your model class and feature extractor
-from models.model_v2_2017 import Model_v2_2017
+from models.model_v1_2018 import Model_v1_2018
 from feature_extractors.pe_feature import PEFeatureExtractor
 
 
@@ -26,15 +26,15 @@ def categorize_score(score):
         return "Malicious"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = Model_v2_2017()
-model.load_state_dict(torch.load("models/Model_v2_2017_testing.pth", map_location=device))
+model = Model_v1_2018()
+model.load_state_dict(torch.load("models/model_v1_2018.pth", map_location=device))
 model.to(device)
 model.eval()
 
-scaler = joblib.load("scalers/scaler_v2_2017.pkl")
+scaler = joblib.load("scalers/scaler_EB.pkl")
 
 # Feature extractor instance (you can point this to your JSON config if needed)
-feature_extractor = PEFeatureExtractor()
+feature_extractor = PEFeatureExtractor(version=2018)
 
 
 @app.route("/analyze", methods=["POST"])
