@@ -11,5 +11,7 @@ class ScaledDataset(Dataset):
         return len(self.X)
 
     def __getitem__(self, idx):
-        x_scaled = self.scaler.transform(self.X[idx].reshape(1, -1)).squeeze(0)
-        return torch.tensor(x_scaled, dtype=torch.float32), torch.tensor(self.y[idx], dtype=torch.float32).unsqueeze(0)
+        x = self.X[idx]
+        x_scaled = self.scaler.transform([x])[0]  # avoid reshape/squeeze
+        y = torch.tensor(self.y[idx], dtype=torch.float32)
+        return torch.tensor(x_scaled, dtype=torch.float32), y

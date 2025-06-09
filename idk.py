@@ -31,17 +31,16 @@ def stratified_indices(y, val_ratio=0.15, seed=19):
     return train_idx, val_idx
 
 
-def prepare_dataloaders(X_train, y_train, X_test, y_test, batch_size=8192, val_split=0.15):
-    train_idx, val_idx = stratified_indices(y_train, val_ratio=val_split)
 
-    # Fit scaler incrementally
+def prepare_dataloaders(X_train, y_train, X_val, y_val, X_test, y_test, batch_size=8192):
+    # Fit scaler incrementally on training data only
     scaler = StandardScaler()
-    for i in range(0, len(train_idx), 10000):
-        batch_indices = train_idx[i:i+10000]
-        scaler.partial_fit(X_train[batch_indices])
+    for i in range(0, X_train.shape[0], 10000):
+        batch = X_train[i:i+10000]
+        scaler.partial_fit(batch)
 
-    train_dataset = IndexedScaledDataset(X_train, y_train, train_idx, scaler)
-    val_dataset = IndexedScaledDataset(X_train, y_train, val_idx, scaler)
+    train_dataset = ScaledDataset(X_train, y_train, scaler)
+    val_dataset = ScaledDataset(X_val, y_val, scaler)
     test_dataset = ScaledDataset(X_test, y_test, scaler)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
