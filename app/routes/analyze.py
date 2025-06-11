@@ -10,8 +10,9 @@ def analyze():
     
     allowed_extensions = {'.exe', '.dll'}
     if not (file.filename.lower().endswith(tuple(allowed_extensions))):
-        return jsonify({"error": "Invalid file type. "}), 400
+        return jsonify({"error": "Invalid file type."}), 400
     
+    print(f"Detected file size: {file.content_length} bytes")
     MAX_SIZE = 400 * 1024 * 1024  
     if file.content_length > MAX_SIZE:
         return jsonify({"error": "File exceeds 400MB limit."}), 400

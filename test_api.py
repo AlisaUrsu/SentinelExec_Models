@@ -3,7 +3,7 @@ import os
 import unittest
 from pathlib import Path
 
-API_URL = "http://localhost:5000/analyze"
+API_URL = "http://127.0.0.1:5000/analyze"
 
 class TestMalwareAPI(unittest.TestCase):
     @classmethod
@@ -11,7 +11,7 @@ class TestMalwareAPI(unittest.TestCase):
         """Create test files before running tests"""
         # Create a valid small EXE (dummy file)
         Path("valid.exe").write_bytes(os.urandom(1024))  # 1KB
-        # Create an oversize EXE (401MB)
+        # Create an oversized EXE (401MB)
         Path("huge.exe").write_bytes(os.urandom(401 * 1024 * 1024)) 
         Path("invalid.txt").write_text("Not a PE file")
 
@@ -37,8 +37,13 @@ class TestMalwareAPI(unittest.TestCase):
 
     def test_oversize_file(self):
         """Test with EXE >400MB"""
+        file_size = 401 * 1024 * 1024
         with open("huge.exe", "rb") as f:
-            response = requests.post(API_URL, files={"file": f})
+            response = requests.post(
+                API_URL,
+                files={"file": ("huge.exe", f, "application/octet-stream")},
+                headers={"Content-Length": str(file_size)}  # Force-set size
+            )
         
         self.assertEqual(response.status_code, 400)
         self.assertIn("File too large", response.json()["error"])
