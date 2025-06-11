@@ -7,23 +7,23 @@ class Model_v2_2017(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, 2048),
-            nn.BatchNorm1d(2048),
             nn.ReLU(),
+            nn.BatchNorm1d(2048),
             nn.Dropout(0.5),
 
             nn.Linear(2048, 1024),
-            nn.BatchNorm1d(1024),
             nn.ReLU(),
+            nn.BatchNorm1d(1024),
             nn.Dropout(0.5),
 
             nn.Linear(1024, 512),
-            nn.BatchNorm1d(512),
             nn.ReLU(),
+            nn.BatchNorm1d(512),
             nn.Dropout(0.5),
 
             nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
             nn.ReLU(),
+            nn.BatchNorm1d(256),
             nn.Dropout(0.5),
 
             nn.Linear(256, 1),

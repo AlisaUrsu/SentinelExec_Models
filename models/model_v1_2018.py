@@ -10,19 +10,15 @@ class Model_v1_2018(nn.Module):
             nn.BatchNorm1d(2048),
             nn.Dropout(0.5),
 
-            nn.Linear(2048, 1024),
+            nn.Linear(2048, 2048),
             nn.ReLU(),
-            nn.BatchNorm1d(1024), 
+            nn.BatchNorm1d(2048), 
             nn.Dropout(0.5), 
             
-            nn.Linear(1024, 1024),
+            nn.Linear(2048, 1024),
             nn.ReLU(),
             nn.BatchNorm1d(1024),  
-            #nn.Linear(128, 64),
-            #nn.ReLU(),
-            #nn.BatchNorm1d(64),
-            
-
+           
             nn.Linear(1024, 1),
             nn.Sigmoid()
         )
