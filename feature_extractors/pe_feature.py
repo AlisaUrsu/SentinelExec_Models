@@ -62,7 +62,7 @@ class PEFeatureExtractor(object):
         except Exception:  
             raise
 
-        features = {"sha256": hashlib.sha256(bytez).hexdigest()}
+        features = {"sha256": hashlib.sha256(bytez).hexdigest(), "label": 0}
         features.update({fe.name: fe.raw_features(bytez, lief_binary) for fe in self.features})
         return features
 
