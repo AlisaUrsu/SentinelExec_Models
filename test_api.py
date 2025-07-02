@@ -9,9 +9,7 @@ class TestMalwareAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create test files before running tests"""
-        # Create a valid small EXE (dummy file)
-        Path("valid.exe").write_bytes(os.urandom(1024))  # 1KB
-        # Create an oversized EXE (401MB)
+        Path("valid.exe").write_bytes(os.urandom(1024))  
         Path("huge.exe").write_bytes(os.urandom(401 * 1024 * 1024)) 
         Path("invalid.txt").write_text("Not a PE file")
 
@@ -24,7 +22,7 @@ class TestMalwareAPI(unittest.TestCase):
         json = response.json()
         self.assertIn("score", json)
         self.assertIn("label", json)
-        print(f"✓ Valid EXE test passed (score: {json['score']})")
+        print(f"Valid EXE test passed (score: {json['score']})")
 
     def test_invalid_extension(self):
         """Test with non-EXE/DLL file"""
@@ -33,7 +31,7 @@ class TestMalwareAPI(unittest.TestCase):
         
         self.assertEqual(response.status_code, 400)
         self.assertIn("Invalid file type", response.json()["error"])
-        print("✓ Invalid extension test passed")
+        print("Invalid extension test passed")
 
     def test_oversize_file(self):
         """Test with EXE >400MB"""
@@ -42,12 +40,12 @@ class TestMalwareAPI(unittest.TestCase):
             response = requests.post(
                 API_URL,
                 files={"file": ("huge.exe", f, "application/octet-stream")},
-                headers={"Content-Length": str(file_size)}  # Force-set size
+                headers={"Content-Length": str(file_size)}  
             )
         
         self.assertEqual(response.status_code, 400)
-        self.assertIn("File too large", response.json()["error"])
-        print("✓ Oversize file test passed")
+        self.assertIn("File exceeds 400MB limit.", response.json()["error"])
+        print("Oversize file test passed")
 
     @classmethod
     def tearDownClass(cls):

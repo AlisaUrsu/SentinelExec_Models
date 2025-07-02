@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify
 from app.services.model_service import analyze_file
 from app.utils.helpers import categorize_score
@@ -12,9 +13,13 @@ def analyze():
     if not (file.filename.lower().endswith(tuple(allowed_extensions))):
         return jsonify({"error": "Invalid file type."}), 400
     
-    print(f"Detected file size: {file.content_length} bytes")
+    file.seek(0, os.SEEK_END)  
+    size = file.tell()
+    file.seek(0)    
+    print(f"Detected file size: {size} bytes")
+    
     MAX_SIZE = 400 * 1024 * 1024  
-    if file.content_length > MAX_SIZE:
+    if size > MAX_SIZE:
         return jsonify({"error": "File exceeds 400MB limit."}), 400
    
     try:
