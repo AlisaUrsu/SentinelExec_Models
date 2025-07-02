@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #feature_extractor = PEFeatureExtractor(version=2018)
 
 model = Model_BIG_v4()
-model.load_state_dict(torch.load("models\Model_BIG_v5 (1).pth", map_location=device))
+model.load_state_dict(torch.load("models/Model_BIG_v5 (1).pth", map_location=device))
 model.to(device)
 model.eval()
 
