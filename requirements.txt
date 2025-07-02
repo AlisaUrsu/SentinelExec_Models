@@ -3,6 +3,7 @@ flask_cors==6.0.0
 joblib==1.4.2
 lief==0.16.6
 matplotlib==3.10.3
+gunicorn
 numpy==2.3.1
 pandas==2.3.0
 requests==2.32.4
